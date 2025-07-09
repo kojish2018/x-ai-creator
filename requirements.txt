@@ -1,7 +1,6 @@
-feedparser
 tweepy
 google-generativeai
 schedule
 python-dotenv
-requests
-beautifulsoup4
+selenium
+selenium-stealth
