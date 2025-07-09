@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from nitter_fetcher import get_new_tweets, save_processed_id, get_nitter_search_url
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+from browser_fetcher import BrowserFetcher
 from gemini_client import generate_comment
 
 # .envファイルから環境変数を読み込む
@@ -16,7 +19,7 @@ print("\n[ステップ1: 環境変数の読み込みチェック]")
 required_vars = [
     "TWITTER_API_KEY", "TWITTER_API_SECRET_KEY",
     "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET",
-    "GEMINI_API_KEY", "NITTER_URL", "SEARCH_QUERY"
+    "GEMINI_API_KEY", "SEARCH_QUERY", "X_USERNAME", "X_PASSWORD"
 ]
 all_vars_set = True
 for var in required_vars:
@@ -33,35 +36,41 @@ if not all_vars_set:
 
 
 # 1. ツイート収集テスト
-print("\n[ステップ2: Nitterからのツイート収集テスト]")
+print("\n[ステップ2: ブラウザからのツイート収集テスト]")
+fetcher = None
+target_tweet = None
 try:
-    nitter_endpoint = get_nitter_search_url()
-    print(f"  - Nitterエンドポイント: {nitter_endpoint}")
-    new_tweets = get_new_tweets()
+    fetcher = BrowserFetcher()
+    fetcher.login()
+    search_query = os.getenv("SEARCH_QUERY", '"AI breakthrough" lang:en')
+    new_tweets = fetcher.fetch_tweets(search_query)
+    
     if not new_tweets:
         print("新しいツイートは見つかりませんでした。")
-        print("  - 検索クエリやNitterのURLが正しいか確認してください。")
+        print("  - 検索クエリが正しいか確認してください。")
         print("  - すべてのツイートが処理済み (processed_ids.txt) の可能性があります。")
-        target_tweet = None
     else:
         print(f"{len(new_tweets)}件の新しいツイートを取得しました。")
         target_tweet = new_tweets[0] # 最初の1件をテスト対象とする
         print("  - テスト対象ツイート:")
         print(f"    - ID: {target_tweet['id']}")
         print(f"    - URL: {target_tweet['url']}")
-        print(f"    - 内容: {target_tweet['content'][:100]}...")
+        print(f"    - 内容: {target_tweet['text'][:100]}...")
 
 except Exception as e:
     print(f"エラーが発生しました: {e}")
-    print("  - NitterのURLが有効か、またはネットワーク接続を確認してください。")
-    target_tweet = None
+    print("  - ブラウザの起動またはXへのログインに失敗しました。")
+    print("  - X_USERNAME, X_PASSWORD, またはネットワーク接続を確認してください。")
+finally:
+    if fetcher:
+        fetcher.close()
 
 
 # 2. AIコメント生成テスト
 if target_tweet:
     print("\n[ステップ3: Geminiによるコメント生成テスト]")
     try:
-        generated_comment = generate_comment(target_tweet['content'])
+        generated_comment = generate_comment(target_tweet['text'])
         print("AIによるコメントが生成されました:")
         print(f"  - {generated_comment}")
     except Exception as e:
@@ -81,10 +90,9 @@ if target_tweet and generated_comment:
     print(post_content)
     print("------------------")
 
-    # テストが成功したとみなし、IDを処理済みとして記録
-    save_processed_id(target_tweet['id'])
-    print(f"\nツイートID {target_tweet['id']} を processed_ids.txt に記録しました。")
+    # BrowserFetcherがprocessed_ids.txtを管理するため、ここでは何もしない
+    print(f"\nツイートID {target_tweet['id']} はBrowserFetcherによって処理済みとして記録されます。")
 else:
     print("\n[ステップ4: Xへの投稿シミュレーション] - スキップ (ツイートまたはコメントが不十分)")
 
-print("\n--- テスト終了 ---")
+print("\n--- テスト終了 ---\n")
