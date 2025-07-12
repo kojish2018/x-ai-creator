@@ -1,4 +1,1 @@
-.env
-__pycache__/
-.DS_Store
-processed_ids.txt
+chrome-dev-profile/

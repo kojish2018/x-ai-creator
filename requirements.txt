@@ -4,3 +4,5 @@ schedule
 python-dotenv
 selenium
 selenium-stealth
+snscrape
+pandas
