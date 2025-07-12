@@ -4,5 +4,5 @@ schedule
 python-dotenv
 selenium
 selenium-stealth
-snscrape
+git+https://github.com/JustAnotherArchivist/snscrape.git
 pandas

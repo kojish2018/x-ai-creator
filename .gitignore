@@ -1,1 +1,4 @@
+
 chrome-dev-profile/
+.env
+processed_ids.txt
